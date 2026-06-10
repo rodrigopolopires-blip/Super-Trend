@@ -1,127 +1,74 @@
-// This source code is subject to the terms of the Mozilla Public License 2.0 at https://mozilla.org/MPL/2.0/
-// © rodrigopolopires-blip
-// Strategy: ATR Breakout Trading - WIN B3 (3 min chart)
-// Features: Breakout signals, volatility analysis, trend following, dynamic lines, alerts & backtest
-
 //@version=6
-strategy(
-    title="ATR Breakout Trading - WIN B3",
-    shorttitle="ATR Breakout",
-    overlay=true,
-    pyramiding=0,
-    default_qty_type=strategy.fixed,
-    default_qty_value=1,
-    initial_capital=10000,
-    commission_type=strategy.commission.percent,
-    commission_value=0.001
-)
+strategy("ATR Breakout Trading - WIN B3", shorttitle="ATR Breakout", overlay=true, pyramiding=0, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=10000)
 
-// ==================== INPUTS ====================
-atrPeriod = input.int(14, "ATR Period", minval=1, group="ATR Settings")
-atrMultiplier = input.float(2.0, "ATR Multiplier", minval=0.1, step=0.1, group="ATR Settings")
+// ========== INPUTS ==========
+atrPeriod = input.int(14, "ATR Period", minval=1)
+atrMult = input.float(2.0, "ATR Multiplier", minval=0.1)
+volPeriod = input.int(20, "Volatility Period", minval=5)
+trendPeriod = input.int(50, "Trend MA Period", minval=1)
+tpPoints = input.int(200, "Take Profit Points", minval=1)
+slPoints = input.int(200, "Stop Loss Points", minval=1)
 
-volPeriod = input.int(20, "Volatility Period", minval=5, group="Volatility Settings")
-volThresholdHigh = input.float(0.75, "High Volatility Threshold", minval=0, maxval=1, step=0.05, group="Volatility Settings")
-volThresholdLow = input.float(0.25, "Low Volatility Threshold", minval=0, maxval=1, step=0.05, group="Volatility Settings")
+// ========== CALCULATIONS ==========
+atrVal = ta.atr(atrPeriod)
+maClose = ta.sma(close, trendPeriod)
+highVal = ta.highest(high, volPeriod)
+lowVal = ta.lowest(low, volPeriod)
+rangeVal = highVal - lowVal
 
-takeProfit = input.int(200, "Take Profit (points)", minval=1, group="Take Profit & Stop Loss")
-stopLoss = input.int(200, "Stop Loss (points)", minval=1, group="Take Profit & Stop Loss")
+// Volatility Status
+isHighVol = rangeVal > ta.sma(rangeVal, volPeriod) * 1.2
+isLowVol = rangeVal < ta.sma(rangeVal, volPeriod) * 0.8
 
-trendPeriod = input.int(50, "Trend MA Period", minval=1, group="Trend Settings")
-
-showBreakoutLines = input(true, "Show Breakout Lines", group="Display Settings")
-showATRBands = input(true, "Show ATR Bands", group="Display Settings")
-showVolatilityZone = input(true, "Show Volatility Zone", group="Display Settings")
-showAlerts = input(true, "Show Alerts on Chart", group="Display Settings")
-
-// ==================== CALCULATIONS ====================
-
-// ATR Calculation
-atrValue = ta.atr(atrPeriod)
-
-// Volatility Analysis
-high_val = ta.highest(high, volPeriod)
-low_val = ta.lowest(low, volPeriod)
-volatilityRange = high_val - low_val
-avgClose = ta.sma(close, volPeriod)
-volatility = volatilityRange / avgClose
-volatilityNorm = ta.normalize(volatility, volPeriod)
-
-isHighVolatility = volatilityNorm > volThresholdHigh
-isLowVolatility = volatilityNorm < volThresholdLow
-
-// Trend Following (Simple MA)
-trendMA = ta.sma(close, trendPeriod)
-isUptrend = close > trendMA
-isDowntrend = close < trendMA
+// Trend Direction
+isUpTrend = close > maClose
+isDnTrend = close < maClose
 
 // Breakout Levels
-breakoutUp = high + (atrValue * atrMultiplier)
-breakoutDown = low - (atrValue * atrMultiplier)
+breakUpLevel = high + (atrVal * atrMult)
+breakDnLevel = low - (atrVal * atrMult)
 
-// Support and Resistance (Dynamic Lines)
-supportLevel = ta.lowest(low, 20)
-resistanceLevel = ta.highest(high, 20)
+// Support & Resistance
+resistance = ta.highest(high, 20)
+support = ta.lowest(low, 20)
 
-// Entry Signals - Corrected Logic
-longCondition = close > breakoutUp and isUptrend and (isHighVolatility or not isLowVolatility)
-shortCondition = close < breakoutDown and isDowntrend and (isHighVolatility or not isLowVolatility)
+// ========== SIGNALS ==========
+buySignal = close > breakUpLevel and isUpTrend
+sellSignal = close < breakDnLevel and isDnTrend
 
-// ==================== STRATEGY EXECUTION ====================
+// ========== STRATEGY ENTRIES & EXITS ==========
+if buySignal
+    strategy.entry("LONG", strategy.long)
 
-// Long Entry
-if longCondition
-    strategy.entry("Long", strategy.long, alert_message="Long entry - ATR Breakout")
+if sellSignal
+    strategy.entry("SHORT", strategy.short)
 
-// Short Entry
-if shortCondition
-    strategy.entry("Short", strategy.short, alert_message="Short entry - ATR Breakout")
+// Exit with TP and SL
+strategy.exit("LONG_EXIT", "LONG", profit=tpPoints, loss=slPoints)
+strategy.exit("SHORT_EXIT", "SHORT", profit=tpPoints, loss=slPoints)
 
-// Exit with TP/SL (using fixed points converted to price)
-tpPrice = takeProfit * syminfo.pointvalue
-slPrice = stopLoss * syminfo.pointvalue
+// ========== ALERTS ==========
+if buySignal
+    alert("BUY SIGNAL - ATR Breakout UP", alert.freq_once_per_bar)
+if sellSignal
+    alert("SELL SIGNAL - ATR Breakout DOWN", alert.freq_once_per_bar)
 
-strategy.exit("Long Exit", "Long", limit=close + tpPrice, stop=close - slPrice)
-strategy.exit("Short Exit", "Short", limit=close - tpPrice, stop=close + slPrice)
+// ========== VISUALIZATION ==========
+// Breakout Lines
+plot(breakUpLevel, "Breakout UP", color.new(color.red, 30), linewidth=2)
+plot(breakDnLevel, "Breakout DOWN", color.new(color.blue, 30), linewidth=2)
 
-// ==================== ALERTS ====================
-if showAlerts
-    if longCondition
-        alert("🟢 BUY SIGNAL - ATR Breakout UP", alert.freq_once_per_bar)
-    if shortCondition
-        alert("🔴 SELL SIGNAL - ATR Breakout DOWN", alert.freq_once_per_bar)
-
-// ==================== VISUALIZATION ====================
-
-// ATR Bands with volatility colors
-if showATRBands
-    bandUpColor = isHighVolatility ? color.new(color.red, 20) : color.new(color.orange, 40)
-    bandDownColor = isHighVolatility ? color.new(color.blue, 20) : color.new(color.cyan, 40)
-    plot(breakoutUp, "Breakout Up", bandUpColor, linewidth=2)
-    plot(breakoutDown, "Breakout Down", bandDownColor, linewidth=2)
-
-// Dynamic Support/Resistance Lines
-if showBreakoutLines
-    plot(resistanceLevel, "Resistance", color.new(color.red, 50), linewidth=1, linestyle=plot.style_dashed)
-    plot(supportLevel, "Support", color.new(color.green, 50), linewidth=1, linestyle=plot.style_dashed)
+// Support & Resistance
+plot(resistance, "Resistance", color.new(color.red, 50), linewidth=1)
+plot(support, "Support", color.new(color.green, 50), linewidth=1)
 
 // Trend MA
-plot(trendMA, "Trend MA", color.new(color.gray, 30), linewidth=1)
+plot(maClose, "Trend MA", color.new(color.gray, 40), linewidth=2)
 
-// Volatility Zone Background
-if showVolatilityZone
-    volatilityColor = isHighVolatility ? color.new(color.red, 95) : isLowVolatility ? color.new(color.green, 95) : color.new(color.gray, 95)
-    bgcolor(volatilityColor)
+// Volatility Background
+volColor = isHighVol ? color.new(color.red, 92) : isLowVol ? color.new(color.green, 92) : color.new(color.gray, 95)
+bgcolor(volColor)
 
-// Entry Signals Visual Markers
-plotshape(longCondition, title="Buy Signal", style=shape.labelup, location=location.belowbar, color=color.green, text="BUY", textcolor=color.white, size=size.small)
-plotshape(shortCondition, title="Sell Signal", style=shape.labeldown, location=location.abovebar, color=color.red, text="SELL", textcolor=color.white, size=size.small)
-
-// ==================== BACKTEST INFO ====================
-// Strategy Tester will show:
-// - Total Closed Trades
-// - Win Rate (%)
-// - Profit Factor
-// - Max Drawdown (%)
-// - Sharpe Ratio
-// - Return on Investment
+// Entry Signals
+plotshape(buySignal, title="BUY", style=shape.labelup, location=location.belowbar, color=color.new(color.green, 0), text="BUY", textcolor=color.white, size=size.small)
+plotshape(sellSignal, title="SELL", style=shape.labeldown, location=location.abovebar, color=color.new(color.red, 0), text="SELL", textcolor=color.white, size=size.small)
