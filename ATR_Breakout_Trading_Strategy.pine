@@ -2,12 +2,12 @@
 strategy("ATR Breakout Trading - WIN B3", shorttitle="ATR Breakout", overlay=true, pyramiding=0, default_qty_type=strategy.fixed, default_qty_value=1, initial_capital=10000)
 
 // ========== INPUTS ==========
-atrPeriod = input.int(14, "ATR Period", minval=1)
-atrMult = input.float(2.0, "ATR Multiplier", minval=0.1)
-volPeriod = input.int(20, "Volatility Period", minval=5)
-trendPeriod = input.int(50, "Trend MA Period", minval=1)
-tpPoints = input.int(200, "Take Profit Points", minval=1)
-slPoints = input.int(200, "Stop Loss Points", minval=1)
+atrPeriod = input.int(18, "ATR Period", minval=1)
+atrMult = input.float(1,8 "ATR Multiplier", minval=0.1)
+volPeriod = input.int(36, "Volatility Period", minval=5)
+trendPeriod = input.int(45, "Trend MA Period", minval=1)
+tpPoints = input.int(90, "Take Profit Points", minval=1)
+slPoints = input.int(90, "Stop Loss Points", minval=1)
 
 // ========== CALCULATIONS ==========
 atrVal = ta.atr(atrPeriod)
