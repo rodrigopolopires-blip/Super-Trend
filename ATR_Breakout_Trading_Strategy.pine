@@ -3,7 +3,7 @@ strategy("ATR Breakout Trading - WIN B3", shorttitle="ATR Breakout", overlay=tru
 
 // ========== INPUTS ==========
 atrPeriod = input.int(18, "ATR Period", minval=1)
-atrMult = input.float(1,8 "ATR Multiplier", minval=0.1)
+atrMult = input.float(1.8, "ATR Multiplier", minval=0.1)
 volPeriod = input.int(36, "Volatility Period", minval=5)
 trendPeriod = input.int(45, "Trend MA Period", minval=1)
 tpPoints = input.int(90, "Take Profit Points", minval=1)
@@ -49,9 +49,9 @@ strategy.exit("SHORT_EXIT", "SHORT", profit=tpPoints, loss=slPoints)
 
 // ========== ALERTS ==========
 if buySignal
-    alert("BUY SIGNAL - ATR Breakout UP", alert.freq_once_per_bar)
+    alert("BUY SIGNAL - ATR Breakout UP", alert.freq_once_per_bar_close)
 if sellSignal
-    alert("SELL SIGNAL - ATR Breakout DOWN", alert.freq_once_per_bar)
+    alert("SELL SIGNAL - ATR Breakout DOWN", alert.freq_once_per_bar_close)
 
 // ========== VISUALIZATION ==========
 // Breakout Lines
