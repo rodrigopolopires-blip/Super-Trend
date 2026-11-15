@@ -55,8 +55,8 @@ if sellSignal
 
 // ========== VISUALIZATION ==========
 // Breakout Lines
-plot(breakUpLevel, "Breakout UP", color.new(color.red, 30), linewidth=2)
-plot(breakDnLevel, "Breakout DOWN", color.new(color.blue, 30), linewidth=2)
+plot(breakUpLevel, "Breakout UP", color.new(color.blue, 30), linewidth=2)
+plot(breakDnLevel, "Breakout DOWN", color.new(color.red, 30), linewidth=2)
 
 // Support & Resistance
 plot(resistance, "Resistance", color.new(color.red, 50), linewidth=1)
