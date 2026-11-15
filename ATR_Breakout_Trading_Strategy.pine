@@ -4,7 +4,6 @@ strategy("ATR Breakout Trading - WIN B3", shorttitle="ATR Breakout", overlay=tru
 // ========== INPUTS ==========
 atrPeriod = input.int(18, "ATR Period", minval=1)
 atrMult = input.float(1.8, "ATR Multiplier", minval=0.1)
-volPeriod = input.int(36, "Volatility Period", minval=5)
 trendPeriod = input.int(45, "Trend MA Period", minval=1)
 tpPoints = input.int(90, "Take Profit Points", minval=1)
 slPoints = input.int(90, "Stop Loss Points", minval=1)
@@ -12,13 +11,6 @@ slPoints = input.int(90, "Stop Loss Points", minval=1)
 // ========== CALCULATIONS ==========
 atrVal = ta.atr(atrPeriod)
 maClose = ta.sma(close, trendPeriod)
-highVal = ta.highest(high, volPeriod)
-lowVal = ta.lowest(low, volPeriod)
-rangeVal = highVal - lowVal
-
-// Volatility Status
-isHighVol = rangeVal > ta.sma(rangeVal, volPeriod) * 1.2
-isLowVol = rangeVal < ta.sma(rangeVal, volPeriod) * 0.8
 
 // Trend Direction
 isUpTrend = close > maClose
@@ -64,10 +56,6 @@ plot(support, "Support", color.new(color.green, 50), linewidth=1)
 
 // Trend MA
 plot(maClose, "Trend MA", color.new(color.gray, 40), linewidth=2)
-
-// Volatility Background
-volColor = isHighVol ? color.new(color.red, 92) : isLowVol ? color.new(color.green, 92) : color.new(color.gray, 95)
-bgcolor(volColor)
 
 // Entry Signals
 plotshape(buySignal, title="BUY", style=shape.labelup, location=location.belowbar, color=color.new(color.green, 0), text="BUY", textcolor=color.white, size=size.small)
